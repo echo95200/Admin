@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>895</width>
-    <height>717</height>
+    <height>719</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -76,7 +76,7 @@
    <widget class="QPushButton" name="pushButtonUpload">
     <property name="geometry">
      <rect>
-      <x>40</x>
+      <x>290</x>
       <y>380</y>
       <width>89</width>
       <height>25</height>
@@ -92,7 +92,7 @@
       <x>40</x>
       <y>430</y>
       <width>791</width>
-      <height>211</height>
+      <height>221</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout"/>
@@ -100,7 +100,7 @@
    <widget class="QRadioButton" name="radioButtonAll">
     <property name="geometry">
      <rect>
-      <x>160</x>
+      <x>40</x>
       <y>380</y>
       <width>112</width>
       <height>23</height>
@@ -113,7 +113,7 @@
    <widget class="QRadioButton" name="radioButtonSpecial">
     <property name="geometry">
      <rect>
-      <x>240</x>
+      <x>170</x>
       <y>380</y>
       <width>112</width>
       <height>23</height>

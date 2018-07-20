@@ -11,10 +11,11 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pStackedLayout = new QStackedLayout();
     m_pTableViewUser = new QTableView();
     QLabel *pAllUserPage = new QLabel(this);
-    pAllUserPage->setText("All users");
+    pAllUserPage->setText("This package is for all users");
     m_pStackedLayout->addWidget(pAllUserPage);
     m_pStackedLayout->addWidget(m_pTableViewUser);
     ui->verticalLayout->addLayout(m_pStackedLayout);
+    ui->radioButtonAll->setChecked(true);
     m_pModelUser = new QSqlQueryModel(m_pTableViewUser);
 
     //Set the parametres for the compression
@@ -139,5 +140,6 @@ void MainWindow::on_radioButtonSpecial_clicked()
     m_DatabaseOperation.listAllUsers(m_pModelUser);
     m_pTableViewUser->setModel(m_pModelUser);
     m_pTableViewUser->verticalHeader()->hide();
+    m_pTableViewUser->setColumnWidth(1,150);
     m_pTableViewUser->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
 }
