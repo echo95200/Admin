@@ -9,14 +9,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Interface
     m_pStackedLayout = new QStackedLayout();
-    m_pTableViewUser = new QTableView();
+    m_pTableViewCustomer = new QTableView();
     QLabel *pAllUserPage = new QLabel(this);
     pAllUserPage->setText("This package is for all users");
     m_pStackedLayout->addWidget(pAllUserPage);
-    m_pStackedLayout->addWidget(m_pTableViewUser);
+    m_pStackedLayout->addWidget(m_pTableViewCustomer);
     ui->verticalLayout->addLayout(m_pStackedLayout);
     ui->radioButtonAll->setChecked(true);
-    m_pModelUser = new QSqlQueryModel(m_pTableViewUser);
+    ui->lineEditSearchUser->hide();
+    ui->pushButtonSerachUser->hide();
+    m_pModelCustomer = new QSqlTableModel(m_pTableViewCustomer);
 
     //Set the parametres for the compression
     Lib7z::init();
@@ -56,10 +58,28 @@ void MainWindow::on_pushButtonChooseFile_clicked()
 //Compress the file into 7z
 //Upload the 7zFile into ftp server
 void MainWindow::on_pushButtonUpload_clicked()
-{
+{    
+    if (ui->radioButtonSpecial->isChecked()) {
+        m_iListIdCustomer.clear();
+        QModelIndexList listSelected = m_pTableViewCustomer->selectionModel()->selectedIndexes();
+        foreach (QModelIndex index, listSelected) {
+            int row = index.row();
+            int id = m_pModelCustomer->data(m_pModelCustomer->index(row,0)).toInt();
+            m_iListIdCustomer.append(id);
+        }
+        qDebug() << "ID : " << m_iListIdCustomer;
+        qDebug() << "You have selected " << listSelected.count();
+        if (listSelected.count() == 0) {
+            this->statusBar()->showMessage("You have to select some customers",10000);
+            return;
+        }
+    }
+
     if (m_FileChoosedList.size() == 0 || (ui->lineEditFileName->text().isEmpty())){
         this->statusBar()->showMessage("The file and the name can't be empty",10000);
     } else {
+
+        qDebug() << "nimei";
         QString fileName = ui->lineEditFileName->text();
 
         //Create a temporary file
@@ -125,21 +145,65 @@ void MainWindow::uploadFinished(QNetworkReply *reply)
     m_DatabaseOperation.insertPackage(m_PackageName,m_PackageMD5,m_PackageDate);
 
     //update the database for authorization
-    m_DatabaseOperation.updateAuthorization(m_PackageName);
-    ui->statusBar->showMessage("Update the database ok!",10000);
+    if (ui->radioButtonAll->isChecked()) {
+        m_DatabaseOperation.updateAuthorization(m_PackageName);
+        ui->statusBar->showMessage("Update the database ok!",10000);
+    } else {
+        //TODO
+        m_DatabaseOperation.updateAuthorizationWithCustomer(m_PackageName,m_iListIdCustomer);
+        ui->statusBar->showMessage("Update the database ok!",10000);
+        ui->lineEditSearchUser->clear();
+        m_pModelCustomer->clear();
+    }
+
 }
 
 void MainWindow::on_radioButtonAll_clicked()
 {
     m_pStackedLayout->setCurrentIndex(0);
+    ui->lineEditSearchUser->hide();
+    ui->pushButtonSerachUser->hide();
 }
 
 void MainWindow::on_radioButtonSpecial_clicked()
 {
     m_pStackedLayout->setCurrentIndex(1);
-    m_DatabaseOperation.listAllUsers(m_pModelUser);
-    m_pTableViewUser->setModel(m_pModelUser);
-    m_pTableViewUser->verticalHeader()->hide();
-    m_pTableViewUser->setColumnWidth(1,150);
-    m_pTableViewUser->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+    m_pTableViewCustomer->setModel(m_pModelCustomer);
+    m_pTableViewCustomer->verticalHeader()->hide();
+    m_pTableViewCustomer->setColumnWidth(1,150);
+    m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+
+    ui->lineEditSearchUser->show();
+    ui->pushButtonSerachUser->show();
+}
+
+void MainWindow::on_pushButtonSerachUser_clicked()
+{
+    QString strListUser = ui->lineEditSearchUser->text();
+    QStringList listUser = strListUser.split(";");
+    QString modelFilter;
+    QString subFilter;
+    for (int i=0;i < listUser.count();i++) {
+        if (i != 0) {
+            modelFilter += " or ";
+        }
+        subFilter = QString().sprintf("F_SYS_CLIENT_REF LIKE '%%%s%%' AND F_FLAG_BLACK = 'NO'",QString(listUser.at(i)).toUtf8().data());
+        modelFilter += subFilter;
+    }
+    qDebug() << modelFilter;
+    m_DatabaseOperation.listSpecialUsers(m_pModelCustomer,modelFilter);
+    m_pTableViewCustomer->setModel(m_pModelCustomer);
+    m_pTableViewCustomer->setColumnWidth(1,150);
+    m_pTableViewCustomer->setColumnHidden(2,true);
+}
+
+void MainWindow::on_pushButtonTest_clicked()
+{
+//    QModelIndexList listSelected = m_pTableViewCustomer->selectionModel()->selectedIndexes();
+//    foreach (QModelIndex index, listSelected) {
+//        int row = index.row();
+//        int id = m_pModelCustomer->data(m_pModelCustomer->index(row,0)).toInt();
+//        qDebug() << "ID : " << id;
+//    }
+    this->close();
 }

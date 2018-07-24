@@ -9,6 +9,8 @@
 #include <QMessageBox>
 #include <QSqlRecord>
 #include <QSqlQueryModel>
+#include <QSqlTableModel>
+#include <QList>
 
 class DatabaseOperation : public QObject
 {
@@ -21,9 +23,12 @@ public:
 
     //Update the authorization for all users without the black list
     bool updateAuthorization(QString packageName);
+    //Update the authorization for special users
+    bool updateAuthorizationWithCustomer(QString ,QList<int> );
 
     //Show all the users
-    void listAllUsers(QSqlQueryModel*);
+    //void listAllUsers(QSqlQueryModel*);
+    void listSpecialUsers(QSqlTableModel*,QString);
 
 signals:
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>895</width>
-    <height>719</height>
+    <height>748</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -76,8 +76,8 @@
    <widget class="QPushButton" name="pushButtonUpload">
     <property name="geometry">
      <rect>
-      <x>290</x>
-      <y>380</y>
+      <x>40</x>
+      <y>660</y>
       <width>89</width>
       <height>25</height>
      </rect>
@@ -121,6 +121,42 @@
     </property>
     <property name="text">
      <string>Special</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditSearchUser">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>380</y>
+      <width>461</width>
+      <height>25</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonSerachUser">
+    <property name="geometry">
+     <rect>
+      <x>770</x>
+      <y>380</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Search</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonTest">
+    <property name="geometry">
+     <rect>
+      <x>780</x>
+      <y>660</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Test</string>
     </property>
    </widget>
   </widget>

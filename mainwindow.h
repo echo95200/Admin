@@ -12,7 +12,12 @@
 #include <QStackedLayout>
 #include <QLabel>
 #include <QSqlQueryModel>
+#include <QSqlTableModel>
+#include <QModelIndexList>
+#include <QModelIndex>
 #include <QTableView>
+#include <QTextEdit>
+#include <QList>
 
 #include "databaseoperation.h"
 #include "lib7z_facade.h"
@@ -45,6 +50,10 @@ private slots:
 
     void on_radioButtonSpecial_clicked();
 
+    void on_pushButtonSerachUser_clicked();
+
+    void on_pushButtonTest_clicked();
+
 private:
     Ui::MainWindow *ui;
     DatabaseOperation m_DatabaseOperation;
@@ -58,8 +67,9 @@ private:
 
     //Layout
     QStackedLayout *m_pStackedLayout;
-    QSqlQueryModel* m_pModelUser;
-    QTableView* m_pTableViewUser;
+    QTableView* m_pTableViewCustomer;
+    QSqlTableModel* m_pModelCustomer;
+    QList<int> m_iListIdCustomer;
 };
 
 #endif // MAINWINDOW_H
