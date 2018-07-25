@@ -8,6 +8,7 @@
 #include <QNetworkRequest>
 #include <QNetworkAccessManager>
 #include <QFileInfo>
+#include <QDebug>
 
 class FtpManager : public QObject
 {
@@ -24,7 +25,8 @@ signals:
     void uploadProcess(qint64 bytesSent, qint64 bytesTotal);
     void downloadProcess(qint64 bytesReceived,qint64 bytesTotal);
 
-    void uploadFinished(QNetworkReply*);
+    //Signal to upload finished
+    void uploadFinished();
 
 private slots:
     void finished();

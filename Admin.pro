@@ -30,7 +30,9 @@ SOURCES += \
     databaseoperation.cpp \
     databaseinit.cpp \
     choosefiledialog.cpp \
-    ftpmanager.cpp
+    ftpmanager.cpp \
+    waitingdialog.cpp \
+    compressionworker.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -38,11 +40,14 @@ HEADERS += \
     databaseoperation.h \
     databaseinit.h \
     choosefiledialog.h \
-    ftpmanager.h
+    ftpmanager.h \
+    waitingdialog.h \
+    compressionworker.h
 
 FORMS += \
         mainwindow.ui \
-    login.ui
+    login.ui \
+    waitingdialog.ui
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/QLib7z-master/lib/release/ -lQLib7z
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/QLib7z-master/lib/debug/ -lQLib7z

@@ -19,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->lineEditSearchUser->hide();
     ui->pushButtonSerachUser->hide();
     m_pModelCustomer = new QSqlTableModel(m_pTableViewCustomer);
+    ui->progressBar->hide();
 
     //Set the parametres for the compression
     Lib7z::init();
@@ -29,6 +30,19 @@ MainWindow::MainWindow(QWidget *parent) :
     m_File7z.isDirectory = false;
     m_File7z.archiveIndex = QPoint(0,0);
     m_File7z.mtime = QDateTime(QDate::fromJulianDay(2456413), QTime(12, 50, 42));
+
+    //Configuration of Ftp manager
+    connect(&m_FtpManager,SIGNAL(uploadFinished()),this,SLOT(uploadFinished()));
+    //connect(&m_FtpManager,SIGNAL(uploadProcess(qint64,qint64)),this,SLOT(uploadProgress(qint64,qint64)));
+    //connect(&m_FtpManager,SIGNAL(uploadProcess(qint64,qint64)),&m_WaitingDialog,SLOT(uploadProgressSlot(qint64,qint64)));
+
+    //Configuration of Waiting dialog
+    m_WaitingDialog.setWindowTitle("Upload");
+    connect(this,SIGNAL(compressionSignal()),&m_WaitingDialog,SLOT(compressionSlot()));
+//    connect(this,SIGNAL(uploadProgressSignal1()),&m_WaitingDialog,SLOT(uploadProgressSlot1()));
+//    connect(this,SIGNAL(uploadProgressSignal2()),&m_WaitingDialog,SLOT(uploadProgressSlot2()));
+//    connect(this,SIGNAL(uploadProgressSignal3()),&m_WaitingDialog,SLOT(uploadProgressSlot3()));
+//    connect(this,SIGNAL(uploadProgressSignal4()),&m_WaitingDialog,SLOT(uploadProgressSlot4()));
 }
 
 MainWindow::~MainWindow()
@@ -79,7 +93,16 @@ void MainWindow::on_pushButtonUpload_clicked()
         this->statusBar()->showMessage("The file and the name can't be empty",10000);
     } else {
 
-        qDebug() << "nimei";
+        this->hide();
+        m_WaitingDialog.initialize();
+        m_WaitingDialog.show();
+        QTime t;
+        t.start();
+        while (t.elapsed() < 1000) {
+            QCoreApplication::processEvents();
+        }
+
+        emit compressionSignal();
         QString fileName = ui->lineEditFileName->text();
 
         //Create a temporary file
@@ -113,12 +136,17 @@ void MainWindow::on_pushButtonUpload_clicked()
             m_FtpManager.setHostPort("192.168.0.18",21);
             m_FtpManager.setUserInfo("ftpuser","echo");
             m_FtpManager.put(preFileName + fileName,"/data/" + fileName);
-            connect(&m_FtpManager,SIGNAL(uploadFinished(QNetworkReply*)),this,SLOT(uploadFinished(QNetworkReply*)));
+            emit uploadProgressSignal1();
 
             //Update the database
 
         }
         file.close();
+
+        //After finish the upload file
+        this->show();
+        m_WaitingDialog.close();
+
     }
 }
 
@@ -139,7 +167,7 @@ void MainWindow::deleteDir(QString nameFile)
     dir.rmpath(dir.absolutePath());
 }
 
-void MainWindow::uploadFinished(QNetworkReply *reply)
+void MainWindow::uploadFinished()
 {
     //update the database for package
     m_DatabaseOperation.insertPackage(m_PackageName,m_PackageMD5,m_PackageDate);
@@ -199,11 +227,5 @@ void MainWindow::on_pushButtonSerachUser_clicked()
 
 void MainWindow::on_pushButtonTest_clicked()
 {
-//    QModelIndexList listSelected = m_pTableViewCustomer->selectionModel()->selectedIndexes();
-//    foreach (QModelIndex index, listSelected) {
-//        int row = index.row();
-//        int id = m_pModelCustomer->data(m_pModelCustomer->index(row,0)).toInt();
-//        qDebug() << "ID : " << id;
-//    }
     this->close();
 }

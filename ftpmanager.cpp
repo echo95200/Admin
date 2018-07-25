@@ -28,7 +28,7 @@ void FtpManager::put(const QString &fileName, const QString &path)
 
     connect(pReply,SIGNAL(uploadProgress(qint64,qint64)),this,SIGNAL(uploadProcess(qint64,qint64)));
     connect(pReply,SIGNAL(error(QNetworkReply::NetworkError)),this,SIGNAL(error(QNetworkReply::NetworkError)));
-    connect(&m_Manager,SIGNAL(finished(QNetworkReply*)),this,SIGNAL(uploadFinished(QNetworkReply*)));
+    connect(pReply,SIGNAL(finished()),this,SIGNAL(uploadFinished()));
 }
 
 void FtpManager::get(const QString &path, const QString &fileName)

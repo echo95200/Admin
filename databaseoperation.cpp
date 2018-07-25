@@ -71,7 +71,7 @@ bool DatabaseOperation::updateAuthorization(QString packageName)
         } else {
             if (query.next()) {
                 id = query.value(0).toInt();
-                qDebug() << query.value(0).toInt();
+                //qDebug() <<"update authorization" << query.value(0).toInt();
             }
         }
 
@@ -113,6 +113,7 @@ bool DatabaseOperation::updateAuthorizationWithCustomer(QString packageName, QLi
          } else {
              if (query.next()) {
                  idPackage = query.value(0).toInt();
+                 qDebug() << "special";
                  qDebug() << query.value(0).toInt();
              }
          }
