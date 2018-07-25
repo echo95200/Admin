@@ -18,6 +18,7 @@
 #include <QTableView>
 #include <QTextEdit>
 #include <QList>
+#include <QThread>
 
 #include "databaseoperation.h"
 #include "lib7z_facade.h"
@@ -26,6 +27,7 @@
 #include "choosefiledialog.h"
 #include "ftpmanager.h"
 #include "waitingdialog.h"
+#include "compressionworker.h"
 
 namespace Ui {
 class MainWindow;
@@ -66,6 +68,12 @@ private slots:
     //Slot to check the progress upload
 //    void uploadProgress(qint64,qint64);
 
+    //Slot for the compression error
+    void errorCompressionSlot();
+
+    //Slot for the end of the compression
+    void compressionFinishedSlot();
+
 private:
     Ui::MainWindow *ui;
     DatabaseOperation m_DatabaseOperation;
@@ -84,6 +92,11 @@ private:
     QList<int> m_iListIdCustomer;
 
     WaitingDialog m_WaitingDialog;
+
+    //File manager
+    QString m_FileName;
+    QFile m_File;
+    QString m_PathName;
 };
 
 #endif // MAINWINDOW_H

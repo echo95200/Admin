@@ -36,19 +36,20 @@ void WaitingDialog::uploadProgressSlot4()
 
 void WaitingDialog::initialize()
 {
-    ui->progressBar->setValue(10);
+    ui->progressBar->setValue(0);
 }
 
 void WaitingDialog::compressionSlot()
 {
     ui->label->setText("Compressing the file...");
-//    ui->progressBar->setMaximum(0);
-//    ui->progressBar->setMinimum(0);
-    ui->progressBar->setValue(50);
+    ui->progressBar->setMaximum(0);
+    ui->progressBar->setMinimum(0);
+    //ui->progressBar->setValue(50);
 }
 
 void WaitingDialog::uploadProgressSlot(qint64 bytesSent, qint64 bytesTotal)
 {
+    ui->label->setText("Uploading...");
     ui->progressBar->setMaximum(bytesTotal);
-    ui->progressBar->setValue(0);
+    ui->progressBar->setValue(bytesSent);
 }

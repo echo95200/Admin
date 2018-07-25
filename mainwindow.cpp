@@ -33,8 +33,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Configuration of Ftp manager
     connect(&m_FtpManager,SIGNAL(uploadFinished()),this,SLOT(uploadFinished()));
-    //connect(&m_FtpManager,SIGNAL(uploadProcess(qint64,qint64)),this,SLOT(uploadProgress(qint64,qint64)));
-    //connect(&m_FtpManager,SIGNAL(uploadProcess(qint64,qint64)),&m_WaitingDialog,SLOT(uploadProgressSlot(qint64,qint64)));
+    connect(&m_FtpManager,SIGNAL(uploadProcess(qint64,qint64)),&m_WaitingDialog,SLOT(uploadProgressSlot(qint64,qint64)));
 
     //Configuration of Waiting dialog
     m_WaitingDialog.setWindowTitle("Upload");
@@ -103,8 +102,29 @@ void MainWindow::on_pushButtonUpload_clicked()
         }
 
         emit compressionSignal();
-        QString fileName = ui->lineEditFileName->text();
+        //QString fileName = ui->lineEditFileName->text();
+        m_FileName = ui->lineEditFileName->text();
+        QDir *temp = new QDir;
+        m_PathName = temp->absolutePath() + "/temp/";
 
+        //Create a new thread to compress the file
+        QThread *thread = new QThread();
+        CompressionWorker *worker = new CompressionWorker(m_FileName,m_PathName,m_FileChoosedList);
+        worker->moveToThread(thread);
+        connect(worker,SIGNAL(error(QString)),this,SLOT(errorCompressionSlot()));
+        connect(thread,SIGNAL(started()),worker,SLOT(process()));
+        //Quit and delete
+        connect(worker,SIGNAL(finished()),thread,SLOT(quit()));
+        connect(worker,SIGNAL(finished()),worker,SLOT(deleteLater()));
+        connect(thread,SIGNAL(finished()),thread,SLOT(deleteLater()));
+
+        //Connect the signal thread finished with the slot
+        connect(worker,SIGNAL(finished()),this,SLOT(compressionFinishedSlot()));
+
+        thread->start();
+
+
+        /*
         //Create a temporary file
         //Path is the current path + /temp
         QDir *temp = new QDir;
@@ -142,29 +162,43 @@ void MainWindow::on_pushButtonUpload_clicked()
 
         }
         file.close();
+        */
 
         //After finish the upload file
-        this->show();
-        m_WaitingDialog.close();
+//        this->show();
+//        m_WaitingDialog.close();
 
     }
 }
 
-void MainWindow::deleteDir(QString nameFile)
+//When the compression is finished, begin to use ftpManager
+void MainWindow::compressionFinishedSlot()
 {
-    QDir dir(nameFile);
-    if (dir.exists()) {
-        dir.setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
-        QFileInfoList fileList = dir.entryInfoList();
-        foreach (QFileInfo file, fileList) {
-            if (file.isFile()) {
-                file.dir().remove(file.fileName());
-            } else {
-                deleteDir(file.absoluteFilePath());
-            }
-        }
-    }
-    dir.rmpath(dir.absolutePath());
+    m_FileChoosedList.clear();
+    ui->labelListFile->setText("The list of files :");
+    ui->lineEditFileName->clear();
+    ui->textEditChooseFile->clear();
+    ui->statusBar->showMessage("Compress the files ok!",10000);
+
+    //get the information of the package
+    m_PackageName = m_FileName;
+    QFile file(m_PathName + m_FileName);
+    file.open(QIODevice::ReadOnly);
+    QByteArray ba = QCryptographicHash::hash(file.readAll(),QCryptographicHash::Md5);
+    m_PackageMD5 = ba.toHex().constData();
+    m_PackageDate = QDateTime::currentDateTime().toTime_t();
+
+    //Begin to upload the 7z file
+    m_FtpManager.setHostPort("192.168.0.18",21);
+    m_FtpManager.setUserInfo("ftpuser","echo");
+    m_FtpManager.put(m_PathName + m_FileName,"/data/" + m_FileName);
+    file.close();
+
+}
+
+void MainWindow::errorCompressionSlot()
+{
+    qDebug()<< "Compression error";
 }
 
 void MainWindow::uploadFinished()
@@ -183,6 +217,9 @@ void MainWindow::uploadFinished()
         ui->lineEditSearchUser->clear();
         m_pModelCustomer->clear();
     }
+
+    this->show();
+    m_WaitingDialog.close();
 
 }
 
@@ -228,4 +265,21 @@ void MainWindow::on_pushButtonSerachUser_clicked()
 void MainWindow::on_pushButtonTest_clicked()
 {
     this->close();
+}
+
+void MainWindow::deleteDir(QString nameFile)
+{
+    QDir dir(nameFile);
+    if (dir.exists()) {
+        dir.setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
+        QFileInfoList fileList = dir.entryInfoList();
+        foreach (QFileInfo file, fileList) {
+            if (file.isFile()) {
+                file.dir().remove(file.fileName());
+            } else {
+                deleteDir(file.absoluteFilePath());
+            }
+        }
+    }
+    dir.rmpath(dir.absolutePath());
 }
