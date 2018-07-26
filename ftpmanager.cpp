@@ -33,10 +33,33 @@ void FtpManager::put(const QString &fileName, const QString &path)
 
 void FtpManager::get(const QString &path, const QString &fileName)
 {
+    QFileInfo info;
+    info.setFile(fileName);
 
+    m_File.setFileName(fileName);
+    m_File.open(QIODevice::WriteOnly | QIODevice::Append);
+    m_Url.setPath(path);
+
+    QNetworkReply *pReply = m_Manager.get(QNetworkRequest(m_Url));
+    connect(pReply,SIGNAL(finished()),this,SLOT(downloadFinishedSlot()));
+    //connect(pReply,SIGNAL(finished()),this,SIGNAL(downloadFinished()));
+    connect(pReply,SIGNAL(downloadProgress(qint64,qint64)),this,SIGNAL(downloadProcess(qint64,qint64)));
+    connect(pReply,SIGNAL(error(QNetworkReply::NetworkError)),this,SIGNAL(error(QNetworkReply::NetworkError)));
 }
 
-void FtpManager::finished()
+void FtpManager::downloadFinishedSlot()
 {
-
+    QNetworkReply *pReply = qobject_cast<QNetworkReply* >(sender());
+    switch (pReply->error()) {
+    case QNetworkReply::NoError : {
+        m_File.write(pReply->readAll());
+        m_File.flush();
+    }
+        break;
+    default:
+        break;
+    }
+    m_File.close();
+    pReply->deleteLater();
+    emit downloadFinished();
 }

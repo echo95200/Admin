@@ -32,16 +32,17 @@ MainWindow::MainWindow(QWidget *parent) :
     m_File7z.mtime = QDateTime(QDate::fromJulianDay(2456413), QTime(12, 50, 42));
 
     //Configuration of Ftp manager
-    connect(&m_FtpManager,SIGNAL(uploadFinished()),this,SLOT(uploadFinished()));
+    connect(&m_FtpManager,SIGNAL(uploadFinished()),this,SLOT(uploadFinishedSlot()));
+    connect(&m_FtpManager,SIGNAL(downloadFinished()),this,SLOT(downloadFinishedSlot()));
     connect(&m_FtpManager,SIGNAL(uploadProcess(qint64,qint64)),&m_WaitingDialog,SLOT(uploadProgressSlot(qint64,qint64)));
+
+    //Signal and slot for checking the integrity of the file
+    connect(this,SIGNAL(uploadSuccessdSignal()),this,SLOT(uploadSuccessdSlot()));
+    connect(this,SIGNAL(uploadFailedSignal()),this,SLOT(uploadFailedSlot()));
 
     //Configuration of Waiting dialog
     m_WaitingDialog.setWindowTitle("Upload");
     connect(this,SIGNAL(compressionSignal()),&m_WaitingDialog,SLOT(compressionSlot()));
-//    connect(this,SIGNAL(uploadProgressSignal1()),&m_WaitingDialog,SLOT(uploadProgressSlot1()));
-//    connect(this,SIGNAL(uploadProgressSignal2()),&m_WaitingDialog,SLOT(uploadProgressSlot2()));
-//    connect(this,SIGNAL(uploadProgressSignal3()),&m_WaitingDialog,SLOT(uploadProgressSlot3()));
-//    connect(this,SIGNAL(uploadProgressSignal4()),&m_WaitingDialog,SLOT(uploadProgressSlot4()));
 }
 
 MainWindow::~MainWindow()
@@ -122,52 +123,6 @@ void MainWindow::on_pushButtonUpload_clicked()
         connect(worker,SIGNAL(finished()),this,SLOT(compressionFinishedSlot()));
 
         thread->start();
-
-
-        /*
-        //Create a temporary file
-        //Path is the current path + /temp
-        QDir *temp = new QDir;
-        QString preFileName = temp->absolutePath() + "/temp/";
-        bool exist = temp->exists(preFileName);
-        if (exist) {
-            deleteDir(preFileName);
-        }
-        temp->mkdir(preFileName);
-
-        //Begin to compress the file into .7z
-        QFile file(preFileName + fileName);
-        file.open(QIODevice::ReadWrite);
-        Lib7z::createArchive(&file,m_FileChoosedList);
-        if (Lib7z::isSupportedArchive(&file)) {
-            m_FileChoosedList.clear();
-            ui->labelListFile->setText("The list of files :");
-            ui->lineEditFileName->clear();
-            ui->textEditChooseFile->clear();
-            ui->statusBar->showMessage("Compress the files ok!",10000);
-
-            //get the information of the package
-            m_PackageName = fileName;
-            QByteArray ba = QCryptographicHash::hash(file.readAll(),QCryptographicHash::Md5);
-            m_PackageMD5 = ba.toHex().constData();
-            m_PackageDate = QDateTime::currentDateTime().toTime_t();
-
-            //Begin to upload the 7z file
-            m_FtpManager.setHostPort("192.168.0.18",21);
-            m_FtpManager.setUserInfo("ftpuser","echo");
-            m_FtpManager.put(preFileName + fileName,"/data/" + fileName);
-            emit uploadProgressSignal1();
-
-            //Update the database
-
-        }
-        file.close();
-        */
-
-        //After finish the upload file
-//        this->show();
-//        m_WaitingDialog.close();
-
     }
 }
 
@@ -199,9 +154,37 @@ void MainWindow::compressionFinishedSlot()
 void MainWindow::errorCompressionSlot()
 {
     qDebug()<< "Compression error";
+    return;
 }
 
-void MainWindow::uploadFinished()
+//When the upload is finished
+//Download the file and check the integrity of the file
+void MainWindow::uploadFinishedSlot()
+{
+    //Download the file from the Ftp server
+    m_DownloadFileName = "download";
+    m_FtpManager.get("/data/" + m_FileName, m_PathName + m_DownloadFileName);
+}
+
+//When the download is finished
+//Check the integrity of the file
+void MainWindow::downloadFinishedSlot()
+{
+    QFile file(m_PathName + m_DownloadFileName);
+    file.open(QIODevice::ReadOnly);
+    QByteArray ba = QCryptographicHash::hash(file.readAll(),QCryptographicHash::Md5);
+    QString md5DownloadFile = ba.toHex().constData();
+    file.close();
+
+    if (md5DownloadFile == m_PackageMD5) {
+        emit uploadSuccessdSignal();
+    } else {
+        emit uploadFailedSignal();
+    }
+}
+
+//When we have checked the file
+void MainWindow::uploadSuccessdSlot()
 {
     //update the database for package
     m_DatabaseOperation.insertPackage(m_PackageName,m_PackageMD5,m_PackageDate);
@@ -218,9 +201,19 @@ void MainWindow::uploadFinished()
         m_pModelCustomer->clear();
     }
 
+    //After the upload work
     this->show();
     m_WaitingDialog.close();
+}
 
+//When we have checked the file
+void MainWindow::uploadFailedSlot()
+{
+    this->statusBar()->showMessage("Upload failed ",10000);
+
+    //After the upload work
+    this->show();
+    m_WaitingDialog.close();
 }
 
 void MainWindow::on_radioButtonAll_clicked()

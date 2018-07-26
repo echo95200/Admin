@@ -27,9 +27,10 @@ signals:
 
     //Signal to upload finished
     void uploadFinished();
+    void downloadFinished();
 
 private slots:
-    void finished();
+    void downloadFinishedSlot();
 
 private:
     QUrl m_Url;

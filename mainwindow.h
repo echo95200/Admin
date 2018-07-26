@@ -45,17 +45,14 @@ public:
 signals:
 
     void compressionSignal();
-    void uploadProgressSignal1();
-    void uploadProgressSignal2();
-    void uploadProgressSignal3();
-    void uploadProgressSignal4();
+
+    void uploadSuccessdSignal();
+    void uploadFailedSignal();
 
 private slots:
     void on_pushButtonChooseFile_clicked();
 
     void on_pushButtonUpload_clicked();
-
-    void uploadFinished();
 
     void on_radioButtonAll_clicked();
 
@@ -65,14 +62,17 @@ private slots:
 
     void on_pushButtonTest_clicked();
 
-    //Slot to check the progress upload
-//    void uploadProgress(qint64,qint64);
-
     //Slot for the compression error
     void errorCompressionSlot();
 
     //Slot for the end of the compression
     void compressionFinishedSlot();
+
+    //Slot for the upload work
+    void uploadFinishedSlot();
+    void downloadFinishedSlot();
+    void uploadSuccessdSlot();
+    void uploadFailedSlot();
 
 private:
     Ui::MainWindow *ui;
@@ -95,8 +95,8 @@ private:
 
     //File manager
     QString m_FileName;
-    QFile m_File;
     QString m_PathName;
+    QString m_DownloadFileName;
 };
 
 #endif // MAINWINDOW_H
