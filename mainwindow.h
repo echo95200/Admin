@@ -19,6 +19,8 @@
 #include <QTextEdit>
 #include <QList>
 #include <QThread>
+#include <QStackedWidget>
+#include <QFormLayout>
 
 #include "databaseoperation.h"
 #include "lib7z_facade.h"
@@ -41,6 +43,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     void deleteDir(QString);
+
+    void initInterfaceAddCustomer();
 
 signals:
 
@@ -74,6 +78,20 @@ private slots:
     void uploadSuccessdSlot();
     void uploadFailedSlot();
 
+    void on_actionUploadFile_triggered();
+
+    void on_actionCustomer_triggered();
+
+    //Slot for add the customer
+    void addCustomerSlot();
+
+    //Slot for search customer
+    void searchCustomerSlot();
+
+    //Slot for changing the permission of the customer
+    void changeCustomerIntoBlackSlot();
+    void changeCustomerIntoNormalSlot();
+
 private:
     Ui::MainWindow *ui;
     DatabaseOperation m_DatabaseOperation;
@@ -87,9 +105,22 @@ private:
 
     //Layout
     QStackedLayout *m_pStackedLayout;
-    QTableView* m_pTableViewCustomer;
-    QSqlTableModel* m_pModelCustomer;
+    QTableView* m_pTableViewAuthorization;
+    QSqlTableModel* m_pModelAuthorization;
     QList<int> m_iListIdCustomer;
+
+    //Add a new widget customer
+    QStackedLayout *m_pCustomerStackedLayout;
+    QStackedWidget *m_pStackedWidget;
+
+    QWidget *m_pWidgetAddCustomer;
+    QLineEdit *m_pCustomerRefLineEdit;
+    QPushButton *m_pPushButtonAddCustomer;
+    QTableView *m_pTableViewCustomer;
+    QSqlTableModel *m_pModelCustomer;
+    QString m_CustomerRef;
+    QLineEdit *m_pCustomerResearchLineEdit;
+    QPushButton *m_pCustomerReasearchPushButton;
 
     WaitingDialog m_WaitingDialog;
 

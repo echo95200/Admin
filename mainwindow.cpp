@@ -9,17 +9,28 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Interface
     m_pStackedLayout = new QStackedLayout();
-    m_pTableViewCustomer = new QTableView();
+    m_pTableViewAuthorization = new QTableView();
     QLabel *pAllUserPage = new QLabel(this);
     pAllUserPage->setText("This package is for all users");
     m_pStackedLayout->addWidget(pAllUserPage);
-    m_pStackedLayout->addWidget(m_pTableViewCustomer);
+    m_pStackedLayout->addWidget(m_pTableViewAuthorization);
     ui->verticalLayout->addLayout(m_pStackedLayout);
     ui->radioButtonAll->setChecked(true);
     ui->lineEditSearchUser->hide();
     ui->pushButtonSerachUser->hide();
-    m_pModelCustomer = new QSqlTableModel(m_pTableViewCustomer);
-    ui->progressBar->hide();
+    m_pModelAuthorization = new QSqlTableModel(m_pTableViewAuthorization);
+    m_pTableViewAuthorization->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_pTableViewAuthorization->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    initInterfaceAddCustomer();
+
+    //The global interface
+    m_pStackedWidget = new QStackedWidget(this);
+    m_pStackedWidget->addWidget(ui->widget);
+    m_pStackedWidget->addWidget(m_pWidgetAddCustomer);
+    m_pStackedWidget->resize(ui->widget->size());
+
+    ui->mainToolBar->hide();
 
     //Set the parametres for the compression
     Lib7z::init();
@@ -43,6 +54,58 @@ MainWindow::MainWindow(QWidget *parent) :
     //Configuration of Waiting dialog
     m_WaitingDialog.setWindowTitle("Upload");
     connect(this,SIGNAL(compressionSignal()),&m_WaitingDialog,SLOT(compressionSlot()));
+}
+
+void MainWindow::initInterfaceAddCustomer()
+{
+    //Set the widget for adding the customer
+    m_pWidgetAddCustomer = new QWidget();
+    QLabel *pLabel = new QLabel(this);
+    QLabel *pLabelCustomerRef = new QLabel(this);
+    QLabel *pLabelNull = new QLabel(this);
+    m_pCustomerRefLineEdit = new QLineEdit(this);
+    m_pPushButtonAddCustomer = new QPushButton(this);
+
+    m_pPushButtonAddCustomer->setFixedHeight(30);
+    m_pPushButtonAddCustomer->setFixedWidth(100);
+    m_pPushButtonAddCustomer->setText("Add");
+
+    m_pCustomerResearchLineEdit = new QLineEdit(this);
+    m_pCustomerReasearchPushButton = new QPushButton(this);
+    m_pCustomerReasearchPushButton->setFixedHeight(30);
+    m_pCustomerReasearchPushButton->setFixedWidth(100);
+    m_pCustomerReasearchPushButton->setText("Search");
+
+    m_pTableViewCustomer = new QTableView();
+    m_pModelCustomer = new QSqlTableModel(m_pTableViewCustomer);
+    m_pTableViewCustomer->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_pTableViewCustomer->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_DatabaseOperation.listAllUsers(m_pModelCustomer);
+    m_pTableViewCustomer->setModel(m_pModelCustomer);
+    m_pTableViewCustomer->verticalHeader()->hide();
+    m_pTableViewCustomer->setColumnWidth(1,150);
+    m_pTableViewCustomer->setColumnWidth(2,150);
+    m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+
+    pLabel->setText("Add a customer");
+    pLabelCustomerRef->setText("Ref of customer : ");
+    QGridLayout *pGridLayout = new QGridLayout();
+    pGridLayout->addWidget(pLabel,0,0);
+    pGridLayout->addWidget(pLabelCustomerRef,1,0);
+    pGridLayout->addWidget(m_pCustomerRefLineEdit,1,1,1,2);
+    pGridLayout->addWidget(m_pPushButtonAddCustomer,2,0);
+    pGridLayout->addWidget(pLabelNull,3,0);
+    pGridLayout->addWidget(m_pCustomerResearchLineEdit,4,1);
+    pGridLayout->addWidget(m_pCustomerReasearchPushButton,4,2);
+    pGridLayout->addWidget(m_pTableViewCustomer,5,0,1,3);
+    pGridLayout->setHorizontalSpacing(10);
+    pGridLayout->setVerticalSpacing(10);
+    pGridLayout->setContentsMargins(10,10,10,10);
+
+    m_pWidgetAddCustomer->setLayout(pGridLayout);
+
+    connect(m_pPushButtonAddCustomer,SIGNAL(clicked(bool)),this,SLOT(addCustomerSlot()));
+    connect(m_pCustomerReasearchPushButton,SIGNAL(clicked(bool)),this,SLOT(searchCustomerSlot()));
 }
 
 MainWindow::~MainWindow()
@@ -75,10 +138,10 @@ void MainWindow::on_pushButtonUpload_clicked()
 {    
     if (ui->radioButtonSpecial->isChecked()) {
         m_iListIdCustomer.clear();
-        QModelIndexList listSelected = m_pTableViewCustomer->selectionModel()->selectedIndexes();
+        QModelIndexList listSelected = m_pTableViewAuthorization->selectionModel()->selectedIndexes();
         foreach (QModelIndex index, listSelected) {
             int row = index.row();
-            int id = m_pModelCustomer->data(m_pModelCustomer->index(row,0)).toInt();
+            int id = m_pModelAuthorization->data(m_pModelAuthorization->index(row,0)).toInt();
             m_iListIdCustomer.append(id);
         }
         qDebug() << "ID : " << m_iListIdCustomer;
@@ -144,7 +207,7 @@ void MainWindow::compressionFinishedSlot()
     m_PackageDate = QDateTime::currentDateTime().toTime_t();
 
     //Begin to upload the 7z file
-    m_FtpManager.setHostPort("192.168.0.18",21);
+    m_FtpManager.setHostPort("192.168.0.84",21);
     m_FtpManager.setUserInfo("ftpuser","echo");
     m_FtpManager.put(m_PathName + m_FileName,"/data/" + m_FileName);
     file.close();
@@ -198,7 +261,7 @@ void MainWindow::uploadSuccessdSlot()
         m_DatabaseOperation.updateAuthorizationWithCustomer(m_PackageName,m_iListIdCustomer);
         ui->statusBar->showMessage("Update the database ok!",10000);
         ui->lineEditSearchUser->clear();
-        m_pModelCustomer->clear();
+        m_pModelAuthorization->clear();
     }
 
     //After the upload work
@@ -226,10 +289,10 @@ void MainWindow::on_radioButtonAll_clicked()
 void MainWindow::on_radioButtonSpecial_clicked()
 {
     m_pStackedLayout->setCurrentIndex(1);
-    m_pTableViewCustomer->setModel(m_pModelCustomer);
-    m_pTableViewCustomer->verticalHeader()->hide();
-    m_pTableViewCustomer->setColumnWidth(1,150);
-    m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+    m_pTableViewAuthorization->setModel(m_pModelAuthorization);
+    m_pTableViewAuthorization->verticalHeader()->hide();
+    m_pTableViewAuthorization->setColumnWidth(1,150);
+    m_pTableViewAuthorization->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
 
     ui->lineEditSearchUser->show();
     ui->pushButtonSerachUser->show();
@@ -249,10 +312,10 @@ void MainWindow::on_pushButtonSerachUser_clicked()
         modelFilter += subFilter;
     }
     qDebug() << modelFilter;
-    m_DatabaseOperation.listSpecialUsers(m_pModelCustomer,modelFilter);
-    m_pTableViewCustomer->setModel(m_pModelCustomer);
-    m_pTableViewCustomer->setColumnWidth(1,150);
-    m_pTableViewCustomer->setColumnHidden(2,true);
+    m_DatabaseOperation.listSpecialUsers(m_pModelAuthorization,modelFilter);
+    m_pTableViewAuthorization->setModel(m_pModelAuthorization);
+    m_pTableViewAuthorization->setColumnWidth(1,150);
+    m_pTableViewAuthorization->setColumnHidden(2,true);
 }
 
 void MainWindow::on_pushButtonTest_clicked()
@@ -275,4 +338,53 @@ void MainWindow::deleteDir(QString nameFile)
         }
     }
     dir.rmpath(dir.absolutePath());
+}
+
+void MainWindow::on_actionUploadFile_triggered()
+{
+    m_pStackedWidget->setCurrentIndex(0);
+}
+
+void MainWindow::on_actionCustomer_triggered()
+{
+    m_pStackedWidget->setCurrentIndex(1);
+}
+
+void MainWindow::addCustomerSlot()
+{
+    m_CustomerRef.clear();
+    m_CustomerRef = m_pCustomerRefLineEdit->text().toUpper();
+    if (m_CustomerRef.isEmpty()) {
+        this->statusBar()->showMessage("The customer ref can't be empty",10000);
+    } else {
+        //If the customer ref does not exist in the database
+        if (m_DatabaseOperation.checkCustomerRef(m_CustomerRef)) {
+            if (m_DatabaseOperation.insertCustomer(m_CustomerRef)) {
+                this->statusBar()->showMessage("Add a customer successfully!",10000);
+                //Update the table view of the customer
+                m_DatabaseOperation.listAllUsers(m_pModelCustomer);
+                m_pTableViewCustomer->setModel(m_pModelCustomer);
+                m_pTableViewCustomer->verticalHeader()->hide();
+                m_pTableViewCustomer->setColumnWidth(1,150);
+                m_pTableViewCustomer->setColumnWidth(2,150);
+                m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+            }
+
+        } else {
+            this->statusBar()->showMessage("The customer ref is already existed in the database",10000);
+        }
+    }
+    m_pCustomerRefLineEdit->clear();
+}
+
+void MainWindow::searchCustomerSlot()
+{
+    QString strCustomer = m_pCustomerResearchLineEdit->text().toUpper();
+    QString filter = QString().sprintf("F_SYS_CLIENT_REF LIKE '%%%s%%'",QString(strCustomer).toUtf8().data());
+    m_DatabaseOperation.listSpecialUsers(m_pModelCustomer,filter);
+    m_pTableViewCustomer->setModel(m_pModelCustomer);
+    m_pTableViewCustomer->verticalHeader()->hide();
+    m_pTableViewCustomer->setColumnWidth(1,150);
+    m_pTableViewCustomer->setColumnWidth(2,150);
+    m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
 }

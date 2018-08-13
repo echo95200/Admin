@@ -27,8 +27,13 @@ public:
     bool updateAuthorizationWithCustomer(QString ,QList<int> );
 
     //Show all the users
-    //void listAllUsers(QSqlQueryModel*);
+    void listAllUsers(QSqlQueryModel*);
     void listSpecialUsers(QSqlTableModel*,QString);
+
+    //Check the ref customer exists or not
+    bool checkCustomerRef(QString);
+    //Insert Customer information
+    bool insertCustomer(QString);
 
 signals:
 

@@ -113,8 +113,6 @@ bool DatabaseOperation::updateAuthorizationWithCustomer(QString packageName, QLi
          } else {
              if (query.next()) {
                  idPackage = query.value(0).toInt();
-                 qDebug() << "special";
-                 qDebug() << query.value(0).toInt();
              }
          }
 
@@ -141,18 +139,18 @@ bool DatabaseOperation::updateAuthorizationWithCustomer(QString packageName, QLi
      return false;}
 
 //Select all the customers
-/*
 void DatabaseOperation::listAllUsers(QSqlQueryModel *model)
 {
     QSqlDatabase db = QSqlDatabase::database();
     if (!db.open()) {
         QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
     } else {
-        model->setQuery("SELECT F_ID,F_SYS_CLIENT_REF FROM T_CUSTOMER WHERE F_FLAG_BLACK = 'NO'");
+        //model->setQuery("SELECT F_ID,F_SYS_CLIENT_REF,F_FLAG_BLACK FROM T_CUSTOMER WHERE F_FLAG_BLACK = 'NO'");
+        model->setQuery("SELECT F_ID,F_SYS_CLIENT_REF,F_FLAG_BLACK FROM T_CUSTOMER");
         db.close();
     }
 }
-*/
+
 
 //Show the customers with conditions
 void DatabaseOperation::listSpecialUsers(QSqlTableModel *model, QString filter)
@@ -167,4 +165,51 @@ void DatabaseOperation::listSpecialUsers(QSqlTableModel *model, QString filter)
         model->select();
         db.close();
     }
+}
+
+//Check the ref customer exists or not
+bool DatabaseOperation::checkCustomerRef(QString ref)
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    if (!db.isOpen()) {
+        qDebug() << "Cannot open the database!";
+    } else {
+        QString sql = "SELECT * FROM T_CUSTOMER WHERE F_SYS_CLIENT_REF = ?";
+        query.prepare(sql);
+        query.bindValue(0,ref);
+        if (!query.exec()) {
+            QMessageBox::about(NULL,"ERROR",query.lastError().text());
+        } else {
+            if (!query.next()) {
+                db.close();
+                return true;
+            }
+        }
+    }
+    db.close();
+    return false;
+
+}
+
+//Insert Customer information
+bool DatabaseOperation::insertCustomer(QString ref)
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    if (!db.isOpen()) {
+        QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
+    } else {
+        QString sql = "INSERT INTO T_CUSTOMER VALUES (NULL,?,'NO')";
+        query.prepare(sql);
+        query.bindValue(0,ref);
+        if (!query.exec()) {
+            QMessageBox::about(NULL,"ERROR",query.lastError().text());
+        } else {
+            db.close();
+            return true;
+        }
+    }
+    db.close();
+    return false;
 }
