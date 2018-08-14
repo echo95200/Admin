@@ -186,6 +186,7 @@
     <addaction name="separator"/>
     <addaction name="actionUploadFile"/>
     <addaction name="actionCustomer"/>
+    <addaction name="actionAuthorization"/>
    </widget>
    <addaction name="menuUpdate"/>
   </widget>
@@ -211,6 +212,11 @@
   <action name="actionCustomer">
    <property name="text">
     <string>Customer</string>
+   </property>
+  </action>
+  <action name="actionAuthorization">
+   <property name="text">
+    <string>Authorization</string>
    </property>
   </action>
  </widget>

@@ -22,12 +22,14 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pTableViewAuthorization->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_pTableViewAuthorization->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    initInterfaceAddCustomer();
+    this->initInterfaceCustomer();
+    this->initInterfaceAuthorization();
 
     //The global interface
     m_pStackedWidget = new QStackedWidget(this);
     m_pStackedWidget->addWidget(ui->widget);
     m_pStackedWidget->addWidget(m_pWidgetAddCustomer);
+    m_pStackedWidget->addWidget(m_pWidgetAuthorization);
     m_pStackedWidget->resize(ui->widget->size());
 
     ui->mainToolBar->hide();
@@ -56,9 +58,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this,SIGNAL(compressionSignal()),&m_WaitingDialog,SLOT(compressionSlot()));
 }
 
-void MainWindow::initInterfaceAddCustomer()
+void MainWindow::initInterfaceCustomer()
 {
-    //Set the widget for adding the customer
+    //Set the widget for the management of customer
     m_pWidgetAddCustomer = new QWidget();
     QLabel *pLabel = new QLabel(this);
     QLabel *pLabelCustomerRef = new QLabel(this);
@@ -76,9 +78,17 @@ void MainWindow::initInterfaceAddCustomer()
     m_pCustomerReasearchPushButton->setFixedWidth(100);
     m_pCustomerReasearchPushButton->setText("Search");
 
+    m_pChangeIntoBlackPushButton = new QPushButton(this);
+    m_pChangeIntoNormalPushButton = new QPushButton(this);
+    m_pChangeIntoBlackPushButton->setText("Add into black list");
+    m_pChangeIntoNormalPushButton->setText("Remove from black list");
+
+    //The mode of selection is rows
+    //Each time select a row only
     m_pTableViewCustomer = new QTableView();
     m_pModelCustomer = new QSqlTableModel(m_pTableViewCustomer);
     m_pTableViewCustomer->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_pTableViewCustomer->setSelectionMode(QAbstractItemView::SingleSelection);
     m_pTableViewCustomer->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_DatabaseOperation.listAllUsers(m_pModelCustomer);
     m_pTableViewCustomer->setModel(m_pModelCustomer);
@@ -98,6 +108,8 @@ void MainWindow::initInterfaceAddCustomer()
     pGridLayout->addWidget(m_pCustomerResearchLineEdit,4,1);
     pGridLayout->addWidget(m_pCustomerReasearchPushButton,4,2);
     pGridLayout->addWidget(m_pTableViewCustomer,5,0,1,3);
+    pGridLayout->addWidget(m_pChangeIntoBlackPushButton,6,0);
+    pGridLayout->addWidget(m_pChangeIntoNormalPushButton,7,0);
     pGridLayout->setHorizontalSpacing(10);
     pGridLayout->setVerticalSpacing(10);
     pGridLayout->setContentsMargins(10,10,10,10);
@@ -106,6 +118,45 @@ void MainWindow::initInterfaceAddCustomer()
 
     connect(m_pPushButtonAddCustomer,SIGNAL(clicked(bool)),this,SLOT(addCustomerSlot()));
     connect(m_pCustomerReasearchPushButton,SIGNAL(clicked(bool)),this,SLOT(searchCustomerSlot()));
+    connect(m_pChangeIntoBlackPushButton,SIGNAL(clicked(bool)),this,SLOT(changeCustomerIntoBlackSlot()));
+    connect(m_pChangeIntoNormalPushButton,SIGNAL(clicked(bool)),this,SLOT(changeCustomerIntoNormalSlot()));
+}
+
+void MainWindow::initInterfaceAuthorization()
+{
+    m_pWidgetAuthorization = new QWidget();
+    QLabel *pLabelAuthorization = new QLabel(this);
+    m_pAuthorizationLineEdit = new QLineEdit(this);
+    m_pAuthorizationPushButton = new QPushButton(this);
+    m_pAuthorizationTableView = new QTableView();
+    m_pAuthorizationTableModel = new QSqlTableModel(m_pAuthorizationTableView);
+
+    pLabelAuthorization->setText("The authorization of the customer : ");
+    m_pAuthorizationPushButton->setFixedHeight(30);
+    m_pAuthorizationPushButton->setFixedWidth(100);
+    m_pAuthorizationPushButton->setText("Search");
+
+    m_pAuthorizationTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_pAuthorizationTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_pAuthorizationTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_pAuthorizationTableView->verticalHeader()->hide();
+    m_pAuthorizationTableView->setColumnWidth(0,150);
+    m_pAuthorizationTableView->setColumnWidth(1,150);
+    m_pAuthorizationTableView->setColumnWidth(2,150);
+    m_pAuthorizationTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+
+    m_DatabaseOperation.listAllAuthorizations(m_pAuthorizationTableModel);
+    m_pAuthorizationTableView->setModel(m_pAuthorizationTableModel);
+
+    QGridLayout *pGridLayout = new QGridLayout();
+    pGridLayout->addWidget(pLabelAuthorization,0,0);
+    pGridLayout->addWidget(m_pAuthorizationLineEdit,1,0);
+    pGridLayout->addWidget(m_pAuthorizationPushButton,1,1);
+    pGridLayout->addWidget(m_pAuthorizationTableView,2,0);
+
+    m_pWidgetAuthorization->setLayout(pGridLayout);
+
+    connect(m_pAuthorizationPushButton,SIGNAL(clicked(bool)),this,SLOT(searchAuthorizationSLot()));
 }
 
 MainWindow::~MainWindow()
@@ -147,7 +198,7 @@ void MainWindow::on_pushButtonUpload_clicked()
         qDebug() << "ID : " << m_iListIdCustomer;
         qDebug() << "You have selected " << listSelected.count();
         if (listSelected.count() == 0) {
-            this->statusBar()->showMessage("You have to select some customers",10000);
+            this->statusBar()->showMessage("You have to select the customers",10000);
             return;
         }
     }
@@ -323,6 +374,7 @@ void MainWindow::on_pushButtonTest_clicked()
     this->close();
 }
 
+//Delete the directory
 void MainWindow::deleteDir(QString nameFile)
 {
     QDir dir(nameFile);
@@ -350,6 +402,7 @@ void MainWindow::on_actionCustomer_triggered()
     m_pStackedWidget->setCurrentIndex(1);
 }
 
+//The slot for adding new customer
 void MainWindow::addCustomerSlot()
 {
     m_CustomerRef.clear();
@@ -360,16 +413,19 @@ void MainWindow::addCustomerSlot()
         //If the customer ref does not exist in the database
         if (m_DatabaseOperation.checkCustomerRef(m_CustomerRef)) {
             if (m_DatabaseOperation.insertCustomer(m_CustomerRef)) {
-                this->statusBar()->showMessage("Add a customer successfully!",10000);
-                //Update the table view of the customer
-                m_DatabaseOperation.listAllUsers(m_pModelCustomer);
-                m_pTableViewCustomer->setModel(m_pModelCustomer);
-                m_pTableViewCustomer->verticalHeader()->hide();
-                m_pTableViewCustomer->setColumnWidth(1,150);
-                m_pTableViewCustomer->setColumnWidth(2,150);
-                m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+                //Get the id of the customer
+                int idCustomer = m_DatabaseOperation.getIdCustomerByRef(m_CustomerRef);
+                if (m_DatabaseOperation.insertAuthorization(idCustomer)) {
+                    this->statusBar()->showMessage("Add a customer successfully!",10000);
+                    //Update the table view of the customer
+                    m_DatabaseOperation.listAllUsers(m_pModelCustomer);
+                    m_pTableViewCustomer->setModel(m_pModelCustomer);
+                    m_pTableViewCustomer->verticalHeader()->hide();
+                    m_pTableViewCustomer->setColumnWidth(1,150);
+                    m_pTableViewCustomer->setColumnWidth(2,150);
+                    m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+                }
             }
-
         } else {
             this->statusBar()->showMessage("The customer ref is already existed in the database",10000);
         }
@@ -377,6 +433,7 @@ void MainWindow::addCustomerSlot()
     m_pCustomerRefLineEdit->clear();
 }
 
+//The slot for searching the customer
 void MainWindow::searchCustomerSlot()
 {
     QString strCustomer = m_pCustomerResearchLineEdit->text().toUpper();
@@ -387,4 +444,66 @@ void MainWindow::searchCustomerSlot()
     m_pTableViewCustomer->setColumnWidth(1,150);
     m_pTableViewCustomer->setColumnWidth(2,150);
     m_pTableViewCustomer->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+}
+
+//The slot for searching the customer
+void MainWindow::searchAuthorizationSLot()
+{
+    QString strCustomer = m_pAuthorizationLineEdit->text().toUpper();
+    m_DatabaseOperation.listSpecialAuthorization(m_pAuthorizationTableModel,strCustomer);
+    m_pAuthorizationTableView->setModel(m_pAuthorizationTableModel);
+    m_pAuthorizationLineEdit->setFocus();
+}
+
+//The slot for changing the customer into black list
+void MainWindow::changeCustomerIntoBlackSlot()
+{
+    int idCustomer = -1;
+    QModelIndexList listSelected = m_pTableViewCustomer->selectionModel()->selectedIndexes();
+    foreach (QModelIndex index, listSelected) {
+        int row = index.row();
+        idCustomer = m_pModelCustomer->data(m_pModelCustomer->index(row,0)).toInt();
+    }
+    if (idCustomer == -1) {
+        this->statusBar()->showMessage("You have to choose a customer!",10000);
+    } else {
+        //Change the customer into black list
+        if (m_DatabaseOperation.changeCustomerIntoBlacklist(idCustomer)) {
+            //Update the table view
+            searchCustomerSlot();
+            this->statusBar()->showMessage("You have added the customer into black list",10000);
+        } else {
+            this->statusBar()->showMessage("Failed to add the customer into black list",10000);
+        }
+    }
+}
+
+//The slot for removing the customer from black list
+void MainWindow::changeCustomerIntoNormalSlot()
+{
+    int idCustomer = -1;
+    QModelIndexList listSelected = m_pTableViewCustomer->selectionModel()->selectedIndexes();
+    foreach (QModelIndex index, listSelected) {
+        int row = index.row();
+        idCustomer = m_pModelCustomer->data(m_pModelCustomer->index(row,0)).toInt();
+    }
+    if (idCustomer == -1) {
+        this->statusBar()->showMessage("You have to choose a customer!",10000);
+    } else {
+        //Remove the customer from black list
+        if (m_DatabaseOperation.changeCustomerIntoNormal(idCustomer)) {
+            //Update the table view
+            searchCustomerSlot();
+            this->statusBar()->showMessage("You have removed the customer from black list successfully!",10000);
+        } else {
+            this->statusBar()->showMessage("Failed to remove the customer from black list",10000);
+        }
+    }
+}
+
+void MainWindow::on_actionAuthorization_triggered()
+{
+    m_pStackedWidget->setCurrentIndex(2);
+    //Update the table view
+    searchAuthorizationSLot();
 }

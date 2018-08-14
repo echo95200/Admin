@@ -44,7 +44,8 @@ public:
     ~MainWindow();
     void deleteDir(QString);
 
-    void initInterfaceAddCustomer();
+    void initInterfaceCustomer();
+    void initInterfaceAuthorization();
 
 signals:
 
@@ -92,6 +93,11 @@ private slots:
     void changeCustomerIntoBlackSlot();
     void changeCustomerIntoNormalSlot();
 
+    void on_actionAuthorization_triggered();
+
+    //Slot for searching the authorization
+    void searchAuthorizationSLot();
+
 private:
     Ui::MainWindow *ui;
     DatabaseOperation m_DatabaseOperation;
@@ -121,6 +127,15 @@ private:
     QString m_CustomerRef;
     QLineEdit *m_pCustomerResearchLineEdit;
     QPushButton *m_pCustomerReasearchPushButton;
+    QPushButton *m_pChangeIntoBlackPushButton;
+    QPushButton *m_pChangeIntoNormalPushButton;
+
+    //New widget of the authorization
+    QWidget *m_pWidgetAuthorization;
+    QLineEdit *m_pAuthorizationLineEdit;
+    QPushButton *m_pAuthorizationPushButton;
+    QTableView *m_pAuthorizationTableView;
+    QSqlTableModel *m_pAuthorizationTableModel;
 
     WaitingDialog m_WaitingDialog;
 

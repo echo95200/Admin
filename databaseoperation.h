@@ -35,6 +35,20 @@ public:
     //Insert Customer information
     bool insertCustomer(QString);
 
+    //Change the customer into black list
+    bool changeCustomerIntoBlacklist(int);
+    //Remove the customer from black list
+    bool changeCustomerIntoNormal(int);
+
+    //Get customer id from the ref
+    int getIdCustomerByRef(QString);
+    //Initialize the authorization of the customer
+    bool insertAuthorization(int);
+    //Show all the authorizations
+    void listAllAuthorizations(QSqlQueryModel*);
+    //Show the authorization with conditions
+    void listSpecialAuthorization(QSqlQueryModel*,QString);
+
 signals:
 
 public slots:
