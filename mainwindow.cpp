@@ -269,7 +269,7 @@ void MainWindow::compressionFinishedSlot()
     m_PackageDate = QDateTime::currentDateTime().toTime_t();
 
     //Begin to upload the 7z file
-    m_FtpManager.setHostPort("192.168.1.1",21);
+    m_FtpManager.setHostPort("192.168.0.84",21);
     m_FtpManager.setUserInfo("ftpuser","echo");
     m_FtpManager.put(m_PathName + m_FileName,"/data/" + m_FileName);
     file.close();
@@ -414,6 +414,7 @@ void MainWindow::on_actionUploadFile_triggered()
 void MainWindow::on_actionCustomer_triggered()
 {
     m_pStackedWidget->setCurrentIndex(1);
+    searchCustomerSlot();
 }
 
 //The slot for adding new customer
