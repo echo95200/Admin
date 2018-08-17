@@ -20,6 +20,7 @@ public:
 
     bool checkLogin(QString,QString);
     bool insertPackage(QString version,QString md5,qint64 date);
+    bool updatePackage(QString version,QString md5,qint64 date);
 
     //Update the authorization for all users without the black list
     bool updateAuthorization(QString packageName);
@@ -28,6 +29,7 @@ public:
 
     //Show all the users
     void listAllUsers(QSqlQueryModel*);
+    void listAllCustomers(QSqlQueryModel*);
     void listSpecialUsers(QSqlTableModel*,QString);
 
     //Check the ref customer exists or not
@@ -48,6 +50,9 @@ public:
     void listAllAuthorizations(QSqlQueryModel*);
     //Show the authorization with conditions
     void listSpecialAuthorization(QSqlQueryModel*,QString);
+
+    //Active the customer
+    bool activeCustomer(int);
 
 signals:
 

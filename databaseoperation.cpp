@@ -30,6 +30,7 @@ bool DatabaseOperation::checkLogin(QString userName, QString password)
     return false;
 }
 
+//Insert the package for the all customers
 bool DatabaseOperation::insertPackage(QString version, QString md5, qint64 date)
 {
     QSqlDatabase db = QSqlDatabase::database();
@@ -53,6 +54,34 @@ bool DatabaseOperation::insertPackage(QString version, QString md5, qint64 date)
     return false;
 }
 
+//Update the special package for the apecial customer
+bool DatabaseOperation::updatePackage(QString version, QString md5, qint64 date)
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    if (!db.isOpen()) {
+        QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
+    } else {
+        //UPDATE T_CUSTOMER SET F_ID_PACKAGE = -1 WHERE F_FLAG_BLACK = 'NO' AND F_ACTIVE = 'YES' AND F_ID = 6
+        QString sql = "UPDATE T_PACKAGE SET F_VERSION = ?,F_NUMBER_MD5 = ?,F_DATE_UPLOAD = ? WHERE F_ID = -1";
+        query.prepare(sql);
+        query.bindValue(0,version);
+        query.bindValue(1,md5);
+        query.bindValue(2,date);
+        if (!query.exec()) {
+            QMessageBox::about(NULL,"ERROR",query.lastError().text());
+        } else {
+            db.close();
+            return true;
+        }
+    }
+    db.close();
+    return false;
+}
+
+//Update the authorization of the all customer
+//who is not in the black list and is actived
+/*
 bool DatabaseOperation::updateAuthorization(QString packageName)
 {
     int id = -1;
@@ -94,7 +123,49 @@ bool DatabaseOperation::updateAuthorization(QString packageName)
     db.close();
     return false;
 }
+*/
 
+bool DatabaseOperation::updateAuthorization(QString packageName)
+{
+    int id = -1;
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    if (!db.isOpen()) {
+        QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
+    } else {
+
+        //Get the ID of the package
+        QString sql = "SELECT F_ID FROM T_PACKAGE WHERE F_VERSION = ?";
+        query.prepare(sql);
+        query.bindValue(0,packageName);
+        if (!query.exec()) {
+            QMessageBox::about(NULL,"ERROR",query.lastError().text());
+        } else {
+            if (query.next()) {
+                id = query.value(0).toInt();
+                //qDebug() <<"update authorization" << query.value(0).toInt();
+            }
+        }
+
+        //Update the authorization of the users
+        sql = "UPDATE T_CUSTOMER SET F_ID_PACKAGE = ? WHERE F_FLAG_BLACK = 'NO' AND F_ACTIVE = 'YES'";
+        query.prepare(sql);
+        query.bindValue(0,id);
+        if (!query.exec()) {
+            QMessageBox::about(NULL,"ERROR",query.lastError().text());
+        } else {
+            db.close();
+            return true;
+        }
+    }
+    db.close();
+    return false;
+}
+
+
+//Update the authorization of the special customer
+//who is not in the black list and is actived
+/*
 bool DatabaseOperation::updateAuthorizationWithCustomer(QString packageName, QList<int> listIdCustomer)
 {
     int idPackage = -1;
@@ -136,7 +207,33 @@ bool DatabaseOperation::updateAuthorizationWithCustomer(QString packageName, QLi
          return true;
      }
      db.close();
-     return false;}
+     return false;
+}
+*/
+bool DatabaseOperation::updateAuthorizationWithCustomer(QString packageName, QList<int> listIdCustomer)
+{
+    int idPackage = -1;
+     QSqlDatabase db = QSqlDatabase::database();
+     QSqlQuery query(db);
+     if (!db.isOpen()) {
+         QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
+     } else {
+
+         for (int i=0;i<listIdCustomer.count();i++) {
+             //Update the authorization of the special customer
+             QString sql = "UPDATE T_CUSTOMER SET F_ID_PACKAGE = -1 WHERE F_FLAG_BLACK = 'NO' AND F_ACTIVE = 'YES' AND F_ID = ?";
+             query.prepare(sql);
+             query.bindValue(0,listIdCustomer.at(i));
+             if (!query.exec()) {
+                 QMessageBox::about(NULL,"ERROR",query.lastError().text());
+             }
+         }
+         db.close();
+         return true;
+     }
+     db.close();
+     return false;
+}
 
 //Select all the customers
 void DatabaseOperation::listAllUsers(QSqlQueryModel *model)
@@ -151,6 +248,17 @@ void DatabaseOperation::listAllUsers(QSqlQueryModel *model)
     }
 }
 
+void DatabaseOperation::listAllCustomers(QSqlQueryModel *model)
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.open()) {
+        QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
+    } else {
+        model->setQuery("SELECT * FROM T_CUSTOMER");
+        db.close();
+    }
+}
+
 //Show all the authorizations
 void DatabaseOperation::listAllAuthorizations(QSqlQueryModel *model)
 {
@@ -159,10 +267,11 @@ void DatabaseOperation::listAllAuthorizations(QSqlQueryModel *model)
         QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
     } else {
         //model->setQuery("SELECT F_ID,F_SYS_CLIENT_REF,F_FLAG_BLACK FROM T_CUSTOMER WHERE F_FLAG_BLACK = 'NO'");
-        QString sql = "SELECT T_CUSTOMER.F_SYS_CLIENT_REF,T_CUSTOMER.F_FLAG_BLACK,T_PACKAGE.F_VERSION "
-                      "FROM T_AUTHORIZATION "
-                      "INNER JOIN T_CUSTOMER ON T_AUTHORIZATION.F_ID_CUSTOMER = T_CUSTOMER.F_ID "
-                      "INNER JOIN T_PACKAGE ON T_AUTHORIZATION.F_ID_PACKAGE = T_PACKAGE.F_ID";
+//        QString sql = "SELECT T_CUSTOMER.F_SYS_CLIENT_REF,T_CUSTOMER.F_FLAG_BLACK,T_PACKAGE.F_VERSION "
+//                      "FROM T_AUTHORIZATION "
+//                      "INNER JOIN T_CUSTOMER ON T_AUTHORIZATION.F_ID_CUSTOMER = T_CUSTOMER.F_ID "
+//                      "INNER JOIN T_PACKAGE ON T_AUTHORIZATION.F_ID_PACKAGE = T_PACKAGE.F_ID";
+        QString sql = "SELECT * FROM T_CUSTOMER";
         model->setQuery(sql);
         db.close();
     }
@@ -192,10 +301,11 @@ void DatabaseOperation::listSpecialAuthorization(QSqlQueryModel *model, QString 
         QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
     } else {
         //model->setQuery("SELECT F_ID,F_SYS_CLIENT_REF,F_FLAG_BLACK FROM T_CUSTOMER WHERE F_FLAG_BLACK = 'NO'");
-        QString sql = "SELECT T_CUSTOMER.F_SYS_CLIENT_REF,T_CUSTOMER.F_FLAG_BLACK,T_PACKAGE.F_VERSION "
-                      "FROM T_AUTHORIZATION "
-                      "INNER JOIN T_CUSTOMER ON T_AUTHORIZATION.F_ID_CUSTOMER = T_CUSTOMER.F_ID "
-                      "INNER JOIN T_PACKAGE ON T_AUTHORIZATION.F_ID_PACKAGE = T_PACKAGE.F_ID ";
+//        QString sql = "SELECT T_CUSTOMER.F_SYS_CLIENT_REF,T_CUSTOMER.F_FLAG_BLACK,T_PACKAGE.F_VERSION "
+//                      "FROM T_AUTHORIZATION "
+//                      "INNER JOIN T_CUSTOMER ON T_AUTHORIZATION.F_ID_CUSTOMER = T_CUSTOMER.F_ID "
+//                      "INNER JOIN T_PACKAGE ON T_AUTHORIZATION.F_ID_PACKAGE = T_PACKAGE.F_ID ";
+        QString sql = "SELECT * FROM T_CUSTOMER ";
         sql = sql + "WHERE T_CUSTOMER.F_SYS_CLIENT_REF LIKE '%" + strCustomer + "%'";
         model->setQuery(sql);
         db.close();
@@ -332,6 +442,29 @@ bool DatabaseOperation::changeCustomerIntoNormal(int idCustomer)
     } else {
 
         QString sql = "UPDATE T_CUSTOMER SET F_FLAG_BLACK='NO' WHERE F_ID=?";
+        query.prepare(sql);
+        query.bindValue(0,idCustomer);
+        if (!query.exec()) {
+            QMessageBox::about(NULL,"ERROR",query.lastError().text());
+        } else {
+            db.close();
+            return true;
+        }
+    }
+    db.close();
+    return false;
+}
+
+//Active the customer
+bool DatabaseOperation::activeCustomer(int idCustomer)
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    if (!db.isOpen()) {
+        QMessageBox::about(NULL,"ERROR","Database file cannot be opened!");
+    } else {
+
+        QString sql = "UPDATE T_CUSTOMER SET F_ACTIVE = 'YES' WHERE F_ID=?";
         query.prepare(sql);
         query.bindValue(0,idCustomer);
         if (!query.exec()) {

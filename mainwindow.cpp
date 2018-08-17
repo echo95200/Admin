@@ -83,6 +83,11 @@ void MainWindow::initInterfaceCustomer()
     m_pChangeIntoBlackPushButton->setText("Add into black list");
     m_pChangeIntoNormalPushButton->setText("Remove from black list");
 
+    m_pActiveCustomerPushButton = new QPushButton(this);
+    //m_pDeactiveCustomerPushButton = new QPushButton(this);
+    m_pActiveCustomerPushButton->setText("Active the customer");
+    //m_pDeactiveCustomerPushButton->setText("Deactive the customer");
+
     //The mode of selection is rows
     //Each time select a row only
     m_pTableViewCustomer = new QTableView();
@@ -90,7 +95,8 @@ void MainWindow::initInterfaceCustomer()
     m_pTableViewCustomer->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_pTableViewCustomer->setSelectionMode(QAbstractItemView::SingleSelection);
     m_pTableViewCustomer->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_DatabaseOperation.listAllUsers(m_pModelCustomer);
+    //m_DatabaseOperation.listAllUsers(m_pModelCustomer);
+    m_DatabaseOperation.listAllCustomers(m_pModelCustomer);
     m_pTableViewCustomer->setModel(m_pModelCustomer);
     m_pTableViewCustomer->verticalHeader()->hide();
     m_pTableViewCustomer->setColumnWidth(1,150);
@@ -109,7 +115,9 @@ void MainWindow::initInterfaceCustomer()
     pGridLayout->addWidget(m_pCustomerReasearchPushButton,4,2);
     pGridLayout->addWidget(m_pTableViewCustomer,5,0,1,3);
     pGridLayout->addWidget(m_pChangeIntoBlackPushButton,6,0);
+    pGridLayout->addWidget(m_pActiveCustomerPushButton,6,2);
     pGridLayout->addWidget(m_pChangeIntoNormalPushButton,7,0);
+    //pGridLayout->addWidget(m_pDeactiveCustomerPushButton,7,2);
     pGridLayout->setHorizontalSpacing(10);
     pGridLayout->setVerticalSpacing(10);
     pGridLayout->setContentsMargins(10,10,10,10);
@@ -120,6 +128,8 @@ void MainWindow::initInterfaceCustomer()
     connect(m_pCustomerReasearchPushButton,SIGNAL(clicked(bool)),this,SLOT(searchCustomerSlot()));
     connect(m_pChangeIntoBlackPushButton,SIGNAL(clicked(bool)),this,SLOT(changeCustomerIntoBlackSlot()));
     connect(m_pChangeIntoNormalPushButton,SIGNAL(clicked(bool)),this,SLOT(changeCustomerIntoNormalSlot()));
+    connect(m_pActiveCustomerPushButton,SIGNAL(clicked(bool)),this,SLOT(activeCustomerSlot()));
+    //connect(m_pDeactiveCustomerPushButton,SIGNAL(clicked(bool)),this,SLOT(deactiveCustomerSlot()));
 }
 
 void MainWindow::initInterfaceAuthorization()
@@ -145,7 +155,8 @@ void MainWindow::initInterfaceAuthorization()
     m_pAuthorizationTableView->setColumnWidth(2,150);
     m_pAuthorizationTableView->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
 
-    m_DatabaseOperation.listAllAuthorizations(m_pAuthorizationTableModel);
+    //m_DatabaseOperation.listAllAuthorizations(m_pAuthorizationTableModel);
+    m_DatabaseOperation.listAllCustomers(m_pAuthorizationTableModel);
     m_pAuthorizationTableView->setModel(m_pAuthorizationTableModel);
 
     QGridLayout *pGridLayout = new QGridLayout();
@@ -258,7 +269,7 @@ void MainWindow::compressionFinishedSlot()
     m_PackageDate = QDateTime::currentDateTime().toTime_t();
 
     //Begin to upload the 7z file
-    m_FtpManager.setHostPort("192.168.0.84",21);
+    m_FtpManager.setHostPort("192.168.1.1",21);
     m_FtpManager.setUserInfo("ftpuser","echo");
     m_FtpManager.put(m_PathName + m_FileName,"/data/" + m_FileName);
     file.close();
@@ -301,14 +312,17 @@ void MainWindow::downloadFinishedSlot()
 void MainWindow::uploadSuccessdSlot()
 {
     //update the database for package
-    m_DatabaseOperation.insertPackage(m_PackageName,m_PackageMD5,m_PackageDate);
+    //m_DatabaseOperation.insertPackage(m_PackageName,m_PackageMD5,m_PackageDate);
 
     //update the database for authorization
     if (ui->radioButtonAll->isChecked()) {
+        //update the database for package
+        m_DatabaseOperation.insertPackage(m_PackageName,m_PackageMD5,m_PackageDate);
         m_DatabaseOperation.updateAuthorization(m_PackageName);
         ui->statusBar->showMessage("Update the database ok!",10000);
     } else {
         //TODO
+        m_DatabaseOperation.updatePackage(m_PackageName,m_PackageMD5,m_PackageDate);
         m_DatabaseOperation.updateAuthorizationWithCustomer(m_PackageName,m_iListIdCustomer);
         ui->statusBar->showMessage("Update the database ok!",10000);
         ui->lineEditSearchUser->clear();
@@ -359,7 +373,7 @@ void MainWindow::on_pushButtonSerachUser_clicked()
         if (i != 0) {
             modelFilter += " or ";
         }
-        subFilter = QString().sprintf("F_SYS_CLIENT_REF LIKE '%%%s%%' AND F_FLAG_BLACK = 'NO'",QString(listUser.at(i)).toUtf8().data());
+        subFilter = QString().sprintf("F_SYS_CLIENT_REF LIKE '%%%s%%' AND F_FLAG_BLACK = 'NO' AND F_ACTIVE = 'YES'",QString(listUser.at(i)).toUtf8().data());
         modelFilter += subFilter;
     }
     qDebug() << modelFilter;
@@ -418,7 +432,8 @@ void MainWindow::addCustomerSlot()
                 if (m_DatabaseOperation.insertAuthorization(idCustomer)) {
                     this->statusBar()->showMessage("Add a customer successfully!",10000);
                     //Update the table view of the customer
-                    m_DatabaseOperation.listAllUsers(m_pModelCustomer);
+                    //m_DatabaseOperation.listAllUsers(m_pModelCustomer);
+                    m_DatabaseOperation.listAllCustomers(m_pModelCustomer);
                     m_pTableViewCustomer->setModel(m_pModelCustomer);
                     m_pTableViewCustomer->verticalHeader()->hide();
                     m_pTableViewCustomer->setColumnWidth(1,150);
@@ -497,6 +512,29 @@ void MainWindow::changeCustomerIntoNormalSlot()
             this->statusBar()->showMessage("You have removed the customer from black list successfully!",10000);
         } else {
             this->statusBar()->showMessage("Failed to remove the customer from black list",10000);
+        }
+    }
+}
+
+//The slot for activing the customer
+void MainWindow::activeCustomerSlot()
+{
+    int idCustomer = -1;
+    QModelIndexList listSelected = m_pTableViewCustomer->selectionModel()->selectedIndexes();
+    foreach (QModelIndex index, listSelected) {
+        int row = index.row();
+        idCustomer = m_pModelCustomer->data(m_pModelCustomer->index(row,0)).toInt();
+    }
+    if (idCustomer == -1) {
+        this->statusBar()->showMessage("You have to choose a customer!",10000);
+    } else {
+        //Active the customer from black list
+        if (m_DatabaseOperation.activeCustomer(idCustomer)) {
+            //Update the table view
+            searchCustomerSlot();
+            this->statusBar()->showMessage("You have actived the customer successfully!",10000);
+        } else {
+            this->statusBar()->showMessage("Failed to active the customer",10000);
         }
     }
 }

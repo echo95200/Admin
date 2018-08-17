@@ -93,6 +93,10 @@ private slots:
     void changeCustomerIntoBlackSlot();
     void changeCustomerIntoNormalSlot();
 
+    //Slot for activing and deactiving the customer
+    void activeCustomerSlot();
+    //void deactiveCustomerSlot();
+
     void on_actionAuthorization_triggered();
 
     //Slot for searching the authorization
@@ -129,6 +133,8 @@ private:
     QPushButton *m_pCustomerReasearchPushButton;
     QPushButton *m_pChangeIntoBlackPushButton;
     QPushButton *m_pChangeIntoNormalPushButton;
+    QPushButton *m_pActiveCustomerPushButton;
+    QPushButton *m_pDeactiveCustomerPushButton;
 
     //New widget of the authorization
     QWidget *m_pWidgetAuthorization;
