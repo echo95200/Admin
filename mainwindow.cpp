@@ -191,6 +191,7 @@ void MainWindow::on_pushButtonChooseFile_clicked()
         for(int i=0;i<fileDialog.selectedFiles().size();i++){
             ui->textEditChooseFile->append(fileDialog.selectedFiles().at(i));
         }
+        qDebug() << m_FileChoosedList;
     }
 }
 
